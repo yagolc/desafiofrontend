@@ -1,6 +1,6 @@
 import ModalComp from "./components/ModalComp";
 import ViewModal from "./components/ViewModal";
-import ConfirmDeleteModal from "./components/ConfirmDeleteModal"; // Import the new ConfirmDeleteModal
+import ConfirmDeleteModal from "./components/ConfirmDeleteModal";
 import { EditIcon, DeleteIcon, Search2Icon } from "@chakra-ui/icons";
 import {
   Box,
@@ -32,6 +32,8 @@ const App = () => {
   const [viewData, setViewData] = useState({});
   const [deleteId, setDeleteId] = useState(null);
 
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
+
   async function getSuppliers() {
     const response = await api.get("/suppliers");
     setSuppliers(response.data);
@@ -41,11 +43,33 @@ const App = () => {
     getSuppliers();
   }, []);
 
-  async function handleDelete() {
+  const handleDelete = async () => {
     await api.delete(`/suppliers/${deleteId}`);
     getSuppliers();
     onDeleteClose();
-  }
+  };
+
+  const sortedSuppliers = [...suppliers].sort((a, b) => {
+    if (sortConfig.key) {
+      const aKey = a[sortConfig.key].toLowerCase();
+      const bKey = b[sortConfig.key].toLowerCase();
+      if (aKey < bKey) {
+        return sortConfig.direction === 'ascending' ? -1 : 1;
+      }
+      if (aKey > bKey) {
+        return sortConfig.direction === 'ascending' ? 1 : -1;
+      }
+    }
+    return 0;
+  });
+
+  const requestSort = key => {
+    let direction = 'ascending';
+    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
 
   return (
     <Flex
@@ -67,15 +91,19 @@ const App = () => {
           <Table className="min-w-full bg-white">
             <Thead>
               <Tr className="bg-gray-200">
-                <Th className="px-6 py-3 border-b border-gray-300 text-gray-700">Nome</Th>
+                <Th
+                  className="px-6 py-3 border-b border-gray-300 text-gray-700 cursor-pointer"
+                  onClick={() => requestSort('name')}
+                >
+                  Nome
+                </Th>
                 <Th className="px-6 py-3 border-b border-gray-300 text-gray-700">E-mail</Th>
                 <Th className="px-6 py-3 border-b border-gray-300 text-gray-700">Telefone</Th>
-                <Th className="px-6 py-3 border-b border-gray-300 text-gray-700"></Th>
-                <Th className="px-6 py-3 border-b border-gray-300 text-gray-700"colSpan={3}></Th>
+                <Th className="px-6 py-3 border-b border-gray-300 text-gray-700" colSpan={3}></Th>
               </Tr>
             </Thead>
             <Tbody>
-              {suppliers.map(({ id, name, email, phone }, index) => (
+              {sortedSuppliers.map(({ id, name, email, phone }, index) => (
                 <Tr key={index} cursor="pointer" _hover={{ bg: "gray.100" }}>
                   <Td className="px-6 py-4 border-b border-gray-300">{name}</Td>
                   <Td className="px-6 py-4 border-b border-gray-300">{email}</Td>
