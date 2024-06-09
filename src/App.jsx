@@ -1,5 +1,6 @@
 import ModalComp from "./components/ModalComp";
 import ViewModal from "./components/ViewModal";
+import ConfirmDeleteModal from "./components/ConfirmDeleteModal"; // Import the new ConfirmDeleteModal
 import { EditIcon, DeleteIcon, Search2Icon } from "@chakra-ui/icons";
 import {
   Box,
@@ -20,14 +21,16 @@ import { api } from "./lib/axios";
 const App = () => {
   const { isOpen: isModalOpen, onOpen: onModalOpen, onClose: onModalClose } = useDisclosure();
   const { isOpen: isViewOpen, onOpen: onViewOpen, onClose: onViewClose } = useDisclosure();
+  const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
   const isMobile = useBreakpointValue({
     base: true,
     lg: false,
   });
-  
+
   const [suppliers, setSuppliers] = useState([]);
   const [dataEdit, setDataEdit] = useState({});
   const [viewData, setViewData] = useState({});
+  const [deleteId, setDeleteId] = useState(null);
 
   async function getSuppliers() {
     const response = await api.get("/suppliers");
@@ -38,9 +41,10 @@ const App = () => {
     getSuppliers();
   }, []);
 
-  async function deleteSupplier(id) {
-    await api.delete(`/suppliers/${id}`);
+  async function handleDelete() {
+    await api.delete(`/suppliers/${deleteId}`);
     getSuppliers();
+    onDeleteClose();
   }
 
   return (
@@ -55,11 +59,7 @@ const App = () => {
       <Box maxW={1200} w="100%" h="100%" py={10} px={6} className="bg-white shadow-lg rounded-lg">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-bold">Fornecedores</h1>
-          <Button
-            colorScheme="blue"
-            onClick={onModalOpen}
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-          >
+          <Button colorScheme="blue" onClick={onModalOpen}>
             Novo Fornecedor
           </Button>
         </div>
@@ -67,42 +67,44 @@ const App = () => {
           <Table className="min-w-full bg-white">
             <Thead>
               <Tr className="bg-gray-200">
-                <Th className="border px-4 py-2">Nome</Th>
-                <Th className="border px-4 py-2">E-mail</Th>
-                <Th className="border px-4 py-2">Telefone</Th>
-                <Th className="border px-4 py-2"></Th>
-                <Th className="border px-4 py-2"></Th>
-                <Th className="border px-4 py-2"></Th>
+                <Th className="px-6 py-3 border-b border-gray-300 text-gray-700">Nome</Th>
+                <Th className="px-6 py-3 border-b border-gray-300 text-gray-700">E-mail</Th>
+                <Th className="px-6 py-3 border-b border-gray-300 text-gray-700">Telefone</Th>
+                <Th className="px-6 py-3 border-b border-gray-300 text-gray-700"></Th>
+                <Th className="px-6 py-3 border-b border-gray-300 text-gray-700"colSpan={3}></Th>
               </Tr>
             </Thead>
             <Tbody>
               {suppliers.map(({ id, name, email, phone }, index) => (
-                <Tr key={index} className="bg-white hover:bg-gray-50">
-                  <Td className="border px-4 py-2">{name}</Td>
-                  <Td className="border px-4 py-2">{email}</Td>
-                  <Td className="border px-4 py-2">{phone}</Td>
-                  <Td className="border px-4 py-2">
+                <Tr key={index} cursor="pointer" _hover={{ bg: "gray.100" }}>
+                  <Td className="px-6 py-4 border-b border-gray-300">{name}</Td>
+                  <Td className="px-6 py-4 border-b border-gray-300">{email}</Td>
+                  <Td className="px-6 py-4 border-b border-gray-300">{phone}</Td>
+                  <Td className="px-6 py-4 border-b border-gray-300">
                     <Search2Icon
-                      className="h-6 w-6 text-gray-600 hover:text-gray-800 cursor-pointer"
+                      fontSize={20}
                       onClick={() => {
                         setViewData({ id, name, email, phone });
                         onViewOpen();
                       }}
                     />
                   </Td>
-                  <Td className="border px-4 py-2">
+                  <Td className="px-6 py-4 border-b border-gray-300">
                     <EditIcon
-                      className="h-6 w-6 text-gray-600 hover:text-gray-800 cursor-pointer"
+                      fontSize={20}
                       onClick={() => {
                         setDataEdit({ id, name, email, phone });
                         onModalOpen();
                       }}
                     />
                   </Td>
-                  <Td className="border px-4 py-2">
+                  <Td className="px-6 py-4 border-b border-gray-300">
                     <DeleteIcon
-                      className="h-6 w-6 text-gray-600 hover:text-gray-800 cursor-pointer"
-                      onClick={() => deleteSupplier(id)}
+                      fontSize={20}
+                      onClick={() => {
+                        setDeleteId(id);
+                        onDeleteOpen();
+                      }}
                     />
                   </Td>
                 </Tr>
@@ -125,6 +127,13 @@ const App = () => {
           isOpen={isViewOpen}
           onClose={onViewClose}
           viewData={viewData}
+        />
+      )}
+      {isDeleteOpen && (
+        <ConfirmDeleteModal
+          isOpen={isDeleteOpen}
+          onClose={onDeleteClose}
+          onConfirm={handleDelete}
         />
       )}
     </Flex>
